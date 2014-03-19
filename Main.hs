@@ -4,6 +4,11 @@ import System.INotify
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString (ByteString)
 
+programName :: String
+programName = "make-latex: "
+
+say :: String -> IO ()
+say thing = putStrLn $ programName ++ thing
 
 -- variant of Process.readProcess that returns the output of the process as [ByteString]
 readProcessBS :: FilePath -> [String] -> IO [ByteString]
@@ -28,9 +33,9 @@ make :: String -> Bool -> IO ()
 make file isRerun = do
   output <- readProcessBS "pdflatex" ["--halt-on-error", file]
   mapM_ BS.putStrLn (onlyWarnings output)
-  putStrLn "make done"
+  say "latex run complete"
   if not isRerun && labelsChangedWarning `elem` (onlyWarnings output)
-    then make file True
+    then say "rerunning" >> make file True
     else return ()
 
 
@@ -45,9 +50,9 @@ doWatch inotify file _ = do
 
 main :: IO ()
 main = do
-  inotify <- initINotify
   file <- fmap head $ getArgs
+  inotify <- initINotify
+  say $ "watching " ++ file ++ "; press Enter to terminate"
   doWatch inotify file Ignored
-  putStrLn $ "Watching " ++ file ++ ". Press Enter to terminate."
   _ <- getLine
-  putStrLn "bye."
+  say "bye"
