@@ -17,9 +17,10 @@ readProcessBS prog args = do
   fmap (BS.split '\n') $ BS.hGetContents hout
 
 
-latexWarning, overfullHboxWarning, labelsChangedWarning, latexError :: ByteString
+latexWarning, overfullHboxWarning, labelsChangedWarning, latexError, lineNumber :: ByteString
 latexWarning = BS.pack "LaTeX Warning:"
-latexError = BS.pack "! LaTeX Error:"
+latexError = BS.pack "!"
+lineNumber = BS.pack "l."
 overfullHboxWarning = BS.pack "Overfull \\hbox"
 labelsChangedWarning = BS.pack "LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right."
 
@@ -28,6 +29,7 @@ isWarning line =
      latexWarning `BS.isPrefixOf` line
   || overfullHboxWarning `BS.isPrefixOf` line
   || latexError `BS.isPrefixOf` line
+  || lineNumber `BS.isPrefixOf` line
 
 onlyWarnings :: [ByteString] -> [ByteString]
 onlyWarnings = filter isWarning
@@ -37,7 +39,7 @@ make :: String -> Bool -> IO ()
 make file isRerun = do
   output <- readProcessBS "pdflatex" ["--halt-on-error", file]
   mapM_ BS.putStrLn (onlyWarnings output)
-  say "latex run complete"
+  say "latex run complete -------------------------"
   if not isRerun && labelsChangedWarning `elem` (onlyWarnings output)
     then say "rerunning" >> make file True
     else return ()
