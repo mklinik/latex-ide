@@ -3,12 +3,10 @@ import System.Process
 import System.INotify
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString (ByteString)
-
-programName :: String
-programName = "make-latex: "
+import Control.Monad (void, when)
 
 say :: String -> IO ()
-say thing = putStrLn $ programName ++ thing
+say thing = putStrLn $ "make-latex: " ++ thing
 
 -- variant of Process.readProcess that returns the output of the process as [ByteString]
 readProcessBS :: FilePath -> [String] -> IO [ByteString]
@@ -24,25 +22,25 @@ lineNumber = BS.pack "l."
 overfullHboxWarning = BS.pack "Overfull \\hbox"
 labelsChangedWarning = BS.pack "LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right."
 
-isWarning :: ByteString -> Bool
-isWarning line =
+isInteresting :: ByteString -> Bool
+isInteresting line =
      latexWarning `BS.isPrefixOf` line
   || overfullHboxWarning `BS.isPrefixOf` line
   || latexError `BS.isPrefixOf` line
   || lineNumber `BS.isPrefixOf` line
 
-onlyWarnings :: [ByteString] -> [ByteString]
-onlyWarnings = filter isWarning
+onlyInterestingLines :: [ByteString] -> [ByteString]
+onlyInterestingLines = filter isInteresting
 
 -- some output of pdflatex contains non-utf8 characters, so we cannot use Strings
 make :: String -> Bool -> IO ()
 make file isRerun = do
-  output <- readProcessBS "pdflatex" ["--halt-on-error", file]
-  mapM_ BS.putStrLn (onlyWarnings output)
+  output <- fmap onlyInterestingLines $ readProcessBS "pdflatex" ["--halt-on-error", file]
+  mapM_ BS.putStrLn output
   say "latex run complete -------------------------"
-  if not isRerun && labelsChangedWarning `elem` (onlyWarnings output)
-    then say "rerunning" >> make file True
-    else return ()
+  when (not isRerun && labelsChangedWarning `elem` output) $ do
+    say "rerunning"
+    make file True
 
 
 doWatch :: INotify -> String -> Event -> IO ()
@@ -50,15 +48,14 @@ doWatch inotify file _ = do
   make file False
   -- we use Move because that's what vim does when writing a file
   -- OneShot because after Move the watch becomes invalid.
-  _ <- addWatch inotify [Move,OneShot] file (doWatch inotify file)
-  return ()
+  void $ addWatch inotify [Move,OneShot] file (doWatch inotify file)
 
 
 main :: IO ()
 main = do
-  file <- fmap head $ getArgs
+  (file:_) <- getArgs
   inotify <- initINotify
   say $ "watching " ++ file ++ "; press Enter to terminate"
   doWatch inotify file Ignored
-  _ <- getLine
+  void getLine
   say "bye"
