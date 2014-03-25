@@ -5,8 +5,16 @@ import qualified Data.ByteString.Char8 as BS
 import Data.ByteString (ByteString)
 import Control.Monad (void, when)
 
-say :: String -> IO ()
-say thing = putStrLn $ "make-latex: " ++ thing
+data TextColor = NoColor | Green | Red
+
+say :: TextColor -> String -> IO ()
+say color thing = putStrLn $ escapeStart ++ "make-latex: " ++ thing ++ escapeStop
+ where
+  escapeStart = case color of
+    NoColor -> ""
+    Green   -> "\x1b[32m"
+    Red     -> "\x1b[31m"
+  escapeStop = "\x1b[0m"
 
 -- variant of Process.readProcess that returns the output of the process as [ByteString]
 readProcessBS :: FilePath -> [String] -> IO [ByteString]
@@ -37,9 +45,10 @@ make :: String -> Bool -> IO ()
 make file isRerun = do
   output <- fmap onlyInterestingLines $ readProcessBS "pdflatex" ["--halt-on-error", file]
   mapM_ BS.putStrLn output
-  say "latex run complete -------------------------"
+  let color = if null output then Green else Red
+  say color "latex run complete -------------------------"
   when (not isRerun && labelsChangedWarning `elem` output) $ do
-    say "rerunning"
+    say NoColor "rerunning"
     make file True
 
 
@@ -55,7 +64,7 @@ main :: IO ()
 main = do
   (file:_) <- getArgs
   inotify <- initINotify
-  say $ "watching " ++ file ++ "; press Enter to terminate"
+  say NoColor $ "watching " ++ file ++ "; press Enter to terminate"
   doWatch inotify file Ignored
   void getLine
-  say "bye"
+  say NoColor "bye"
