@@ -11,6 +11,7 @@ executable make-latex
     , bytestring
     , hinotify
     , process >= 1.2.0.0
+    , directory
   hs-source-dirs:
       .
   main-is:

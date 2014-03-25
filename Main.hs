@@ -1,5 +1,6 @@
 import System.Environment (getArgs)
 import System.Process
+import System.Directory (copyFile, doesFileExist)
 import System.INotify
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString (ByteString)
@@ -47,9 +48,17 @@ make file isRerun = do
   mapM_ BS.putStrLn output
   let color = if null output then Green else Red
   say color "latex run complete -------------------------"
-  when (not isRerun && labelsChangedWarning `elem` output) $ do
+  if (not isRerun && labelsChangedWarning `elem` output)
+   then do
     say NoColor "rerunning"
     make file True
+   else do
+    -- pdflatex deletes the result on error which is annoying, so we always
+    -- keep the last sucessful build
+    resultExists <- doesFileExist resultPdf
+    when resultExists $ copyFile resultPdf "tmp.pdf"
+     where
+      resultPdf = (reverse $ dropWhile (/= '.') $ reverse file) ++ "pdf"
 
 
 doWatch :: INotify -> String -> Event -> IO ()
