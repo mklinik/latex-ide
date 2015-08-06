@@ -66,6 +66,7 @@ make :: String -> Bool -> IO ()
 make file isRerun = do
   output <- fmap onlyInterestingLines $ readProcessBS "pdflatex"
     [ "--halt-on-error"
+    , "-interaction=nonstopmode"
     , "-synctex=1"
     , file]
   mapM_ BS.putStrLn output
