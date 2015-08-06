@@ -4,8 +4,29 @@ import System.INotify
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString (ByteString)
 import Control.Monad (void, when)
+import System.Console.GetOpt
 
 data TextColor = NoColor | Green | Red
+
+data Options = Options
+  { mainFile :: String
+  , bibtexFile :: Maybe String
+  , auxFiles :: [String]
+  }
+
+options :: [OptDescr (Options -> Options)]
+options =
+  [ Option ['b'] ["bibtex"] (ReqArg (\b o -> o { bibtexFile = Just b }) "FILE") "the bibtex file your tex file uses"
+  ]
+
+header :: String
+header = "Usage: make-latex texFile [OPTION...] files..."
+
+parseOptions :: [String] -> IO Options
+parseOptions [] = ioError (userError (usageInfo header options))
+parseOptions (file:args) = case getOpt Permute options args of
+  (o,n,[]) -> return $ foldl (flip id) (Options file Nothing n) o
+  (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
 
 say :: TextColor -> String -> IO ()
 say color thing = putStrLn $ escapeStart ++ "make-latex: " ++ thing ++ escapeStop
@@ -57,20 +78,26 @@ make file isRerun = do
     -- pdflatex deletes the result on error which is annoying, but when we want
     -- to use synctex there is nothing we can do.
 
+makeBibtex :: Options -> IO ()
+makeBibtex opts = do
+  maybe (return ()) (\b -> readProcessBS "bibtex" [b] >>= mapM_ BS.putStrLn) (bibtexFile opts)
+  make (mainFile opts) False
+  make (mainFile opts) False
 
-doWatch :: INotify -> String -> Event -> IO ()
-doWatch inotify file _ = do
-  make file False
+doWatch :: Options -> INotify -> Event -> IO ()
+doWatch opts inotify _ = do
+  make (mainFile opts) False
   -- we use Move because that's what vim does when writing a file
   -- OneShot because after Move the watch becomes invalid.
-  void $ addWatch inotify [Move,OneShot] file (doWatch inotify file)
+  void $ addWatch inotify [Move,OneShot] (mainFile opts) (doWatch opts inotify)
 
 
 main :: IO ()
 main = do
-  (file:_) <- getArgs
+  args <- getArgs
+  opts <- parseOptions args
   inotify <- initINotify
-  say NoColor $ "watching " ++ file ++ "; press Enter to terminate"
-  doWatch inotify file Ignored
+  say NoColor $ "watching " ++ mainFile opts ++ "; press Enter to terminate"
+  doWatch opts inotify Ignored
   void getLine
   say NoColor "bye"
