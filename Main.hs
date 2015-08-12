@@ -7,13 +7,12 @@ import Control.Monad (void, when)
 import System.Console.GetOpt
 import System.FilePath
 import System.IO
-import System.Posix.Files (readSymbolicLink)
+import System.Directory
 
 data TextColor = NoColor | Green | Red
 
 data Options = Options
   { mainFile :: String
-  , pdfFile :: String
   , bibtexFile :: Maybe String
   , auxFiles :: [String]
   }
@@ -29,7 +28,7 @@ header = "Usage: make-latex texFile [OPTION...] files..."
 parseOptions :: [String] -> IO Options
 parseOptions [] = ioError (userError (usageInfo header options))
 parseOptions (file:args) = case getOpt Permute options args of
-  (o,n,[]) -> return $ foldl (flip id) (Options file (replaceExtension file "pdf") Nothing n) o
+  (o,n,[]) -> return $ foldl (flip id) (Options file Nothing n) o
   (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
 
 say :: TextColor -> String -> IO ()
@@ -98,6 +97,7 @@ doWatch opts inotify _ = do
 
 commandLoop :: Options -> IO ()
 commandLoop opts = do
+  putStrLn "'q' quit, 'm' make, 'b' make bibtex, 't' terminal, 'e' editor, 'p' pdf viewer"
   c <- getChar
   case c of
     'q' -> return ()
@@ -105,7 +105,7 @@ commandLoop opts = do
     'b' -> makeBibtex opts >> commandLoop opts
     't' -> spawnTerminal (mainFile opts) >> commandLoop opts
     'e' -> spawnTexEditor (mainFile opts) >> commandLoop opts
-    'p' -> spawnPdfViewer (pdfFile opts) >> commandLoop opts
+    'p' -> spawnPdfViewer (replaceExtension (mainFile opts) "pdf") >> commandLoop opts
     _   -> putStr "unknown command " >> putChar c >> putStrLn "" >> commandLoop opts
 
 spawnPdfViewer :: String -> IO ProcessHandle
@@ -116,8 +116,8 @@ spawnTexEditor file = spawnProcess "urxvt" ["-e", "sh", "-c", "vim --servername 
 
 spawnTerminal :: String -> IO ProcessHandle
 spawnTerminal file = do
-  dir <- takeDirectory `fmap` readSymbolicLink file
-  spawnProcess "urxvt" ["-e", "bash", "-cd", dir]
+  dir <- takeDirectory `fmap` makeAbsolute file
+  spawnProcess "urxvt" ["-cd", dir]
 
 main :: IO ()
 main = do
@@ -125,7 +125,7 @@ main = do
   opts <- parseOptions args
 
   inotify <- initINotify
-  say NoColor $ "watching " ++ mainFile opts ++ "; output is " ++ pdfFile opts
+  say NoColor $ "watching " ++ mainFile opts
   doWatch opts inotify Ignored
 
   hSetBuffering stdin NoBuffering
