@@ -131,5 +131,3 @@ main = do
   hSetBuffering stdin NoBuffering
   hSetEcho stdin False
   commandLoop opts
-
-  say NoColor "bye"
