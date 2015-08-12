@@ -85,7 +85,7 @@ make file isRerun = do
 
 makeBibtex :: Options -> IO ()
 makeBibtex opts = do
-  maybe (return ()) (\b -> readProcessBS "bibtex" [b] >>= mapM_ BS.putStrLn) (bibtexFile opts)
+  readProcessBS "bibtex" [dropExtension (mainFile opts)] >>= mapM_ BS.putStrLn
   make (mainFile opts) False
   make (mainFile opts) False
 
