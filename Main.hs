@@ -128,9 +128,6 @@ main = do
   say NoColor $ "watching " ++ mainFile opts ++ "; output is " ++ pdfFile opts
   doWatch opts inotify Ignored
 
-  _ <- spawnPdfViewer (pdfFile opts)
-  _ <- spawnTexEditor (mainFile opts)
-
   hSetBuffering stdin NoBuffering
   hSetEcho stdin False
   commandLoop opts
