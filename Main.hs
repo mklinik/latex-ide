@@ -5,11 +5,13 @@ import qualified Data.ByteString.Char8 as BS
 import Data.ByteString (ByteString)
 import Control.Monad (void, when)
 import System.Console.GetOpt
+import System.FilePath
 
 data TextColor = NoColor | Green | Red
 
 data Options = Options
   { mainFile :: String
+  , pdfFile :: String
   , bibtexFile :: Maybe String
   , auxFiles :: [String]
   }
@@ -25,7 +27,7 @@ header = "Usage: make-latex texFile [OPTION...] files..."
 parseOptions :: [String] -> IO Options
 parseOptions [] = ioError (userError (usageInfo header options))
 parseOptions (file:args) = case getOpt Permute options args of
-  (o,n,[]) -> return $ foldl (flip id) (Options file Nothing n) o
+  (o,n,[]) -> return $ foldl (flip id) (Options file (replaceExtension file "pdf") Nothing n) o
   (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
 
 say :: TextColor -> String -> IO ()
@@ -92,13 +94,24 @@ doWatch opts inotify _ = do
   -- OneShot because after Move the watch becomes invalid.
   void $ addWatch inotify [Move,OneShot] (mainFile opts) (doWatch opts inotify)
 
+runPdfViewer file = spawnProcess "zathura" ["-s", "-x", "vim --servername SYNCTEX --remote-send %{line}gg", file]
+runTexEditor file = spawnProcess "urxvt" ["-e", "sh", "-c", "vim --servername SYNCTEX " ++ file]
+runShell file = spawnProcess "urxvt" ["-e", "bash"]
 
 main :: IO ()
 main = do
   args <- getArgs
   opts <- parseOptions args
+
   inotify <- initINotify
-  say NoColor $ "watching " ++ mainFile opts ++ "; press Enter to terminate"
+  say NoColor $ "watching " ++ mainFile opts ++ "; output is " ++ pdfFile opts
   doWatch opts inotify Ignored
+
+
+  runPdfViewer (pdfFile opts)
+  runTexEditor (mainFile opts)
+  runShell (mainFile opts)
+
+
   void getLine
   say NoColor "bye"
