@@ -13,6 +13,7 @@ executable make-latex
     , process >= 1.2.0.0
     , directory
     , filepath
+    , unix
   hs-source-dirs:
       .
   main-is:

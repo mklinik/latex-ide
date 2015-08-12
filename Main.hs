@@ -6,6 +6,8 @@ import Data.ByteString (ByteString)
 import Control.Monad (void, when)
 import System.Console.GetOpt
 import System.FilePath
+import System.IO
+import System.Posix.Files (readSymbolicLink)
 
 data TextColor = NoColor | Green | Red
 
@@ -94,9 +96,28 @@ doWatch opts inotify _ = do
   -- OneShot because after Move the watch becomes invalid.
   void $ addWatch inotify [Move,OneShot] (mainFile opts) (doWatch opts inotify)
 
-runPdfViewer file = spawnProcess "zathura" ["-s", "-x", "vim --servername SYNCTEX --remote-send %{line}gg", file]
-runTexEditor file = spawnProcess "urxvt" ["-e", "sh", "-c", "vim --servername SYNCTEX " ++ file]
-runShell file = spawnProcess "urxvt" ["-e", "bash"]
+commandLoop :: Options -> IO ()
+commandLoop opts = do
+  c <- getChar
+  case c of
+    'q' -> return ()
+    'm' -> make (mainFile opts) False >> commandLoop opts
+    'b' -> makeBibtex opts >> commandLoop opts
+    't' -> spawnTerminal (mainFile opts) >> commandLoop opts
+    'e' -> spawnTexEditor (mainFile opts) >> commandLoop opts
+    'p' -> spawnPdfViewer (pdfFile opts) >> commandLoop opts
+    _   -> putStr "unknown command " >> putChar c >> putStrLn "" >> commandLoop opts
+
+spawnPdfViewer :: String -> IO ProcessHandle
+spawnPdfViewer file = spawnProcess "zathura" ["-s", "-x", "vim --servername SYNCTEX --remote-send %{line}gg", file]
+
+spawnTexEditor :: String -> IO ProcessHandle
+spawnTexEditor file = spawnProcess "urxvt" ["-e", "sh", "-c", "vim --servername SYNCTEX " ++ file]
+
+spawnTerminal :: String -> IO ProcessHandle
+spawnTerminal file = do
+  dir <- takeDirectory `fmap` readSymbolicLink file
+  spawnProcess "urxvt" ["-e", "bash", "-cd", dir]
 
 main :: IO ()
 main = do
@@ -107,11 +128,11 @@ main = do
   say NoColor $ "watching " ++ mainFile opts ++ "; output is " ++ pdfFile opts
   doWatch opts inotify Ignored
 
+  _ <- spawnPdfViewer (pdfFile opts)
+  _ <- spawnTexEditor (mainFile opts)
 
-  runPdfViewer (pdfFile opts)
-  runTexEditor (mainFile opts)
-  runShell (mainFile opts)
+  hSetBuffering stdin NoBuffering
+  hSetEcho stdin False
+  commandLoop opts
 
-
-  void getLine
   say NoColor "bye"
