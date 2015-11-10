@@ -97,7 +97,7 @@ doWatch opts inotify _ = do
 
 commandLoop :: Options -> IO ()
 commandLoop opts = do
-  putStrLn "'q' quit, 'm' make, 'b' make bibtex, 't' terminal, 'e' editor, 'p' pdf viewer"
+  putStrLn "(q)uit, (m)ake, make (b)ibtex, (t)erminal, (e)ditor, (p)df viewer"
   c <- getChar
   case c of
     'q' -> return ()
