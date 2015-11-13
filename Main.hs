@@ -65,9 +65,10 @@ onlyInterestingLines :: [ByteString] -> [ByteString]
 onlyInterestingLines = filter isInteresting
 
 -- some output of pdflatex contains non-utf8 characters, so we cannot use Strings
-make :: String -> Bool -> IO ()
-make file isRerun = do
-  output <- fmap onlyInterestingLines $ readProcessBS "pdflatex"
+make :: String -> Bool -> Bool -> IO ()
+make file filterErrors isRerun = do
+  let errorFilter = if filterErrors then onlyInterestingLines else id
+  output <- fmap errorFilter $ readProcessBS "pdflatex"
     [ "-interaction", "nonstopmode"
     , "-synctex=1"
     , file]
@@ -77,30 +78,31 @@ make file isRerun = do
   when (not isRerun && labelsChangedWarning `elem` output) $
    do
     say NoColor "rerunning"
-    make file True
+    make file True True
     -- pdflatex deletes the result on error which is annoying, but when we want
     -- to use synctex there is nothing we can do.
 
 makeBibtex :: Options -> IO ()
 makeBibtex opts = do
   readProcessBS "bibtex" [dropExtension (mainFile opts)] >>= mapM_ BS.putStrLn
-  make (mainFile opts) False
-  make (mainFile opts) False
+  make (mainFile opts) True False
+  make (mainFile opts) True False
 
 doWatch :: Options -> INotify -> Event -> IO ()
 doWatch opts inotify _ = do
-  make (mainFile opts) False
+  make (mainFile opts) True False
   -- we use Move because that's what vim does when writing a file
   -- OneShot because after Move the watch becomes invalid.
   void $ addWatch inotify [Move,OneShot] (mainFile opts) (doWatch opts inotify)
 
 commandLoop :: Options -> IO ()
 commandLoop opts = do
-  putStrLn "(q)uit, (m)ake, make (b)ibtex, (t)erminal, (e)ditor, (p)df viewer"
+  putStrLn "(q)uit, (m/M)ake, make (b)ibtex, (t)erminal, (e)ditor, (p)df viewer"
   c <- getChar
   case c of
     'q' -> return ()
-    'm' -> make (mainFile opts) False >> commandLoop opts
+    'm' -> make (mainFile opts) True False >> commandLoop opts
+    'M' -> make (mainFile opts) False False >> commandLoop opts
     'b' -> makeBibtex opts >> commandLoop opts
     't' -> spawnTerminal (mainFile opts) >> commandLoop opts
     'e' -> spawnTexEditor (mainFile opts) >> commandLoop opts
