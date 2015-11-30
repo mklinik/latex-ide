@@ -8,6 +8,8 @@ import System.Console.GetOpt
 import System.FilePath
 import System.IO
 import System.Directory
+import Data.Char (isSpace)
+import Control.Applicative
 
 data TextColor = NoColor | Green | Red
 
@@ -15,6 +17,7 @@ data Options = Options
   { mainFile :: String
   , bibtexFile :: Maybe String
   , auxFiles :: [String]
+  , gitAware :: Bool
   }
 
 options :: [OptDescr (Options -> Options)]
@@ -28,7 +31,7 @@ header = "Usage: make-latex texFile [OPTION...] files..."
 parseOptions :: [String] -> IO Options
 parseOptions [] = ioError (userError (usageInfo header options))
 parseOptions (file:args) = case getOpt Permute options args of
-  (o,n,[]) -> return $ foldl (flip id) (Options file Nothing n) o
+  (o,n,[]) -> return $ foldl (flip id) (Options file Nothing n True) o
   (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
 
 say :: TextColor -> String -> IO ()
@@ -65,9 +68,10 @@ onlyInterestingLines :: [ByteString] -> [ByteString]
 onlyInterestingLines = filter isInteresting
 
 -- some output of pdflatex contains non-utf8 characters, so we cannot use Strings
-make :: String -> Bool -> Bool -> IO ()
-make file filterErrors isRerun = do
+make :: Options -> String -> Bool -> Bool -> IO ()
+make opts file filterErrors isRerun = do
   let errorFilter = if filterErrors then onlyInterestingLines else id
+  makeGitRevision opts
   output <- fmap errorFilter $ readProcessBS "pdflatex"
     [ "-interaction", "nonstopmode"
     , "-synctex=1"
@@ -78,31 +82,38 @@ make file filterErrors isRerun = do
   when (not isRerun && labelsChangedWarning `elem` output) $
    do
     say NoColor "rerunning"
-    make file True True
+    make opts file True True
     -- pdflatex deletes the result on error which is annoying, but when we want
     -- to use synctex there is nothing we can do.
 
 makeBibtex :: Options -> IO ()
 makeBibtex opts = do
   readProcessBS "bibtex" [dropExtension (mainFile opts)] >>= mapM_ BS.putStrLn
-  make (mainFile opts) True False
-  make (mainFile opts) True False
+  make opts (mainFile opts) True False
+  make opts (mainFile opts) True False
+
+makeGitRevision :: Options -> IO ()
+makeGitRevision opts = do
+ gitVersion <- if (gitAware opts)
+   then filter (not . isSpace) <$> readProcess "git" ["describe", "--long", "--dirty"] ""
+   else return "unknown"
+ writeFile "version.tex" $ "\\newcommand{\\version}{" ++ gitVersion ++ "}"
 
 doWatch :: Options -> INotify -> Event -> IO ()
 doWatch opts inotify _ = do
-  make (mainFile opts) True False
+  make opts (mainFile opts) True False
   -- we use Move because that's what vim does when writing a file
   -- OneShot because after Move the watch becomes invalid.
   void $ addWatch inotify [Move,OneShot] (mainFile opts) (doWatch opts inotify)
 
 commandLoop :: Options -> IO ()
 commandLoop opts = do
-  putStrLn "(q)uit, (m/M)ake, make (b)ibtex, (t)erminal, (e)ditor, (p)df viewer"
+  say NoColor "(q)uit, (m/M)ake, make (b)ibtex, (t)erminal, (e)ditor, (p)df viewer"
   c <- getChar
   case c of
     'q' -> return ()
-    'm' -> make (mainFile opts) True False >> commandLoop opts
-    'M' -> make (mainFile opts) False False >> commandLoop opts
+    'm' -> make opts (mainFile opts) True False >> commandLoop opts
+    'M' -> make opts (mainFile opts) False False >> commandLoop opts
     'b' -> makeBibtex opts >> commandLoop opts
     't' -> spawnTerminal (mainFile opts) >> commandLoop opts
     'e' -> spawnTexEditor (mainFile opts) >> commandLoop opts
