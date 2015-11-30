@@ -16,7 +16,6 @@ data TextColor = NoColor | Green | Red
 data Options = Options
   { mainFile :: String
   , bibtexFile :: Maybe String
-  , auxFiles :: [String]
   , gitAware :: Bool
   }
 
@@ -31,7 +30,7 @@ header = "Usage: make-latex texFile [OPTION...] files..."
 parseOptions :: [String] -> IO Options
 parseOptions [] = ioError (userError (usageInfo header options))
 parseOptions (file:args) = case getOpt Permute options args of
-  (o,n,[]) -> return $ foldl (flip id) (Options file Nothing n True) o
+  (o,_,[]) -> return $ foldl (flip id) (Options file Nothing True) o
   (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
 
 say :: TextColor -> String -> IO ()
