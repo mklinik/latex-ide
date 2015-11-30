@@ -10,6 +10,7 @@ import System.IO
 import System.Directory
 import Data.Char (isSpace)
 import Control.Applicative
+import System.Exit
 
 data TextColor = NoColor | Green | Red
 
@@ -30,8 +31,17 @@ header = "Usage: make-latex texFile [OPTION...] files..."
 parseOptions :: [String] -> IO Options
 parseOptions [] = ioError (userError (usageInfo header options))
 parseOptions (file:args) = case getOpt Permute options args of
-  (o,_,[]) -> return $ foldl (flip id) (Options file Nothing True) o
+  (o,_,[]) -> do
+    gitAvailable <- determineGitAvailability
+    return $ foldl (flip id) (Options file Nothing gitAvailable) o
   (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
+
+determineGitAvailability :: IO Bool
+determineGitAvailability = do
+  (exitCode, _, _) <- readProcessWithExitCode "git" ["status"] ""
+  when (exitCode /= ExitSuccess) $
+    say NoColor "Seems like we're not in a git repository. Disabling git version feature"
+  return $ exitCode == ExitSuccess
 
 say :: TextColor -> String -> IO ()
 say color thing = putStrLn $ escapeStart ++ "make-latex: " ++ thing ++ escapeStop
