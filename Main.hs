@@ -129,7 +129,7 @@ commandLoop opts = do
     _   -> putStr "unknown command " >> putChar c >> putStrLn "" >> commandLoop opts
 
 spawnPdfViewer :: String -> IO ProcessHandle
-spawnPdfViewer file = spawnProcess "zathura" ["-s", "-x", "vim --servername " ++ takeBaseName file ++ " --remote-send %{line}gg", file]
+spawnPdfViewer file = spawnProcess "zathura" ["-x", "vim --servername " ++ takeBaseName file ++ " --remote-send %{line}gg", file]
 
 spawnTexEditor :: String -> IO ProcessHandle
 spawnTexEditor file = spawnProcess "urxvt" ["-e", "sh", "-c", "vim --servername " ++ takeBaseName file ++ " " ++ file]
