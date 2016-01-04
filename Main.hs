@@ -103,7 +103,7 @@ makeBibtex opts = do
 makeGitRevision :: Options -> IO ()
 makeGitRevision opts = do
  gitVersion <- if (gitAware opts)
-   then filter (not . isSpace) <$> readProcess "git" ["describe", "--long", "--dirty"] ""
+   then filter (not . isSpace) <$> readProcess "git" ["describe", "--always", "--long", "--dirty"] ""
    else return "unknown"
  writeFile "version.tex" $ "\\newcommand{\\version}{" ++ gitVersion ++ "}"
 
