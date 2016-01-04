@@ -9,7 +9,6 @@ import System.FilePath
 import System.IO
 import System.Directory
 import Data.Char (isSpace)
-import Control.Applicative
 import System.Exit
 
 data TextColor = NoColor | Green | Red
