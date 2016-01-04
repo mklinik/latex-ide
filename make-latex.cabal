@@ -11,7 +11,7 @@ executable latex-ide
     , bytestring
     , hinotify
     , process >= 1.2.0.0
-    , directory
+    , directory >= 1.2.2
     , filepath
     , unix
   hs-source-dirs:
