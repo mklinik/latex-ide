@@ -1,4 +1,4 @@
-import System.Environment (getArgs)
+import System.Environment (getArgs, setEnv)
 import System.Process
 import System.INotify
 import qualified Data.ByteString.Char8 as BS
@@ -80,6 +80,9 @@ make :: Options -> String -> Bool -> Bool -> IO ()
 make opts file filterErrors isRerun = do
   let errorFilter = if filterErrors then onlyInterestingLines else id
   makeGitRevision opts
+  -- set line-length to really long so pdflatex doesn't insert hard linebreaks
+  -- in its output
+  setEnv "max_print_line" "1000"
   output <- fmap errorFilter $ readProcessBS "pdflatex"
     [ "-interaction", "nonstopmode"
     , "-synctex=1"
