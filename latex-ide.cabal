@@ -10,7 +10,7 @@ executable latex-ide
       base
     , bytestring
     , hinotify
-    , process >= 1.2.0.0
+    , process >= 1.4.0.0
     , directory >= 1.2.2
     , filepath
     , unix

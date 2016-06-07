@@ -149,8 +149,12 @@ commandLoop opts = do
     'p' -> spawnPdfViewer (replaceExtension (mainFile opts) "pdf") >> commandLoop opts
     _   -> putStr "unknown command " >> putChar c >> putStrLn "" >> commandLoop opts
 
-spawnPdfViewer :: String -> IO ProcessHandle
-spawnPdfViewer file = spawnProcess "zathura" ["-x", "vim --servername " ++ takeBaseName file ++ " --remote-send %{line}gg", file]
+spawnPdfViewer :: String -> IO ()
+spawnPdfViewer file = do
+  _ <- createProcess $
+    (proc "zathura" ["-x", "vim --servername " ++ takeBaseName file ++ " --remote-send %{line}gg", file])
+    { std_err = NoStream } -- suppress error messages of pdf viewer when file not found
+  return ()
 
 spawnTexEditor :: String -> IO ProcessHandle
 spawnTexEditor file = spawnProcess "gvim" ["--servername", takeBaseName file, file]
