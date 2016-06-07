@@ -136,7 +136,7 @@ spawnPdfViewer :: String -> IO ProcessHandle
 spawnPdfViewer file = spawnProcess "zathura" ["-x", "vim --servername " ++ takeBaseName file ++ " --remote-send %{line}gg", file]
 
 spawnTexEditor :: String -> IO ProcessHandle
-spawnTexEditor file = spawnProcess "urxvt" ["-e", "sh", "-c", "vim --servername " ++ takeBaseName file ++ " " ++ file]
+spawnTexEditor file = spawnProcess "gvim" ["--servername", takeBaseName file, file]
 
 spawnTerminal :: String -> IO ProcessHandle
 spawnTerminal file = do
