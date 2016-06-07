@@ -11,6 +11,9 @@ import System.Directory
 import Data.Char (isSpace)
 import System.Exit
 import Data.List (intersperse)
+import Data.Time.Clock
+import Data.Time.Format
+import Data.Time.LocalTime
 
 data TextColor = NoColor | Green | Red
 
@@ -44,7 +47,11 @@ determineGitAvailability = do
   return $ exitCode == ExitSuccess
 
 say :: TextColor -> String -> IO ()
-say color thing = putStrLn $ escapeStart ++ "make-latex: " ++ thing ++ escapeStop
+say color thing = do
+ tz <- getCurrentTimeZone
+ time <- utcToLocalTime tz <$> getCurrentTime
+ let timeStr = formatTime defaultTimeLocale "%H:%M:%S" time
+ putStrLn $ escapeStart ++ timeStr ++ " " ++ thing ++ escapeStop
  where
   escapeStart = case color of
     NoColor -> ""
@@ -137,7 +144,6 @@ doWatch opts inotify _ = do
 
 commandLoop :: Options -> IO ()
 commandLoop opts = do
-  say NoColor "(q)uit, (m/M)ake, make (b)ibtex, (t)erminal, (e)ditor, (p)df viewer"
   c <- getChar
   case c of
     'q' -> return ()
@@ -171,6 +177,7 @@ main = do
 
   inotify <- initINotify
   say NoColor $ "watching " ++ mainFile opts
+  say NoColor "(q)uit, (m/M)ake, make (b)ibtex, (t)erminal, (e)ditor, (p)df viewer"
   doWatch opts inotify Ignored
 
   hSetBuffering stdin NoBuffering

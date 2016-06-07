@@ -14,6 +14,7 @@ executable latex-ide
     , directory >= 1.2.2
     , filepath
     , unix
+    , time
   hs-source-dirs:
       .
   main-is:
