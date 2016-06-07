@@ -85,6 +85,7 @@ make opts file filterErrors isRerun = do
   setEnv "max_print_line" "1000"
   output <- fmap errorFilter $ readProcessBS "pdflatex"
     [ "-interaction", "nonstopmode"
+    , "-halt-on-error" -- otherwise pdflatex tight-loops on some errors. WTF?
     , "-synctex=1"
     , file]
   mapM_ BS.putStrLn output
