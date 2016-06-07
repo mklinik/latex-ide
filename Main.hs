@@ -10,6 +10,7 @@ import System.IO
 import System.Directory
 import Data.Char (isSpace)
 import System.Exit
+import Data.List (intersperse)
 
 data TextColor = NoColor | Green | Red
 
@@ -58,10 +59,9 @@ readProcessBS prog args = do
   fmap (BS.split '\n') $ BS.hGetContents hout
 
 
-latexWarning, overfullHboxWarning, labelsChangedWarning, latexError, lineNumber :: ByteString
+latexWarning, overfullHboxWarning, labelsChangedWarning, latexError :: ByteString
 latexWarning = BS.pack "LaTeX Warning:"
-latexError = BS.pack "!"
-lineNumber = BS.pack "l."
+latexError = BS.pack "./"
 overfullHboxWarning = BS.pack "Overfull \\hbox"
 labelsChangedWarning = BS.pack "LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right."
 
@@ -70,10 +70,16 @@ isInteresting line =
      latexWarning `BS.isPrefixOf` line
   || overfullHboxWarning `BS.isPrefixOf` line
   || latexError `BS.isPrefixOf` line
-  || lineNumber `BS.isPrefixOf` line
+
+noPdfFileProducedMessage :: ByteString
+noPdfFileProducedMessage = BS.pack "no output PDF file produced!"
+
+isUninteresting :: ByteString -> Bool
+isUninteresting line =
+  noPdfFileProducedMessage `BS.isSuffixOf` line
 
 onlyInterestingLines :: [ByteString] -> [ByteString]
-onlyInterestingLines = filter isInteresting
+onlyInterestingLines output = filter (not . isUninteresting) $ filter isInteresting output
 
 -- some output of pdflatex contains non-utf8 characters, so we cannot use Strings
 make :: Options -> String -> Bool -> Bool -> IO ()
@@ -87,8 +93,10 @@ make opts file filterErrors isRerun = do
     [ "-interaction", "nonstopmode"
     , "-halt-on-error" -- otherwise pdflatex tight-loops on some errors. WTF?
     , "-synctex=1"
+    , "-file-line-error"
     , file]
   mapM_ BS.putStrLn output
+  writeErrorsFile output
   let color = if null output then Green else Red
   say color "latex run complete -------------------------"
   when (not isRerun && labelsChangedWarning `elem` output) $
@@ -97,6 +105,15 @@ make opts file filterErrors isRerun = do
     make opts file True True
     -- pdflatex deletes the result on error which is annoying, but when we want
     -- to use synctex there is nothing we can do.
+
+newline :: ByteString
+newline = BS.pack "\n"
+
+writeErrorsFile :: [ByteString] -> IO ()
+writeErrorsFile output = do
+  let errorsFile = "errors.err"
+  BS.writeFile errorsFile (foldr BS.append newline $ intersperse newline output)
+  return ()
 
 makeBibtex :: Options -> IO ()
 makeBibtex opts = do
