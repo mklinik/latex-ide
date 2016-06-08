@@ -153,7 +153,7 @@ commandLoop opts = do
     't' -> spawnTerminal (mainFile opts) >> commandLoop opts
     'e' -> spawnTexEditor (mainFile opts) >> commandLoop opts
     'p' -> spawnPdfViewer (replaceExtension (mainFile opts) "pdf") >> commandLoop opts
-    _   -> putStr "unknown command " >> putChar c >> putStrLn "" >> commandLoop opts
+    _   -> putStr "unknown command '" >> putChar c >> putStrLn "'" >> help >> commandLoop opts
 
 spawnPdfViewer :: String -> IO ()
 spawnPdfViewer file = do
@@ -170,6 +170,9 @@ spawnTerminal file = do
   dir <- takeDirectory `fmap` makeAbsolute file
   spawnProcess "urxvt" ["-cd", dir]
 
+help :: IO ()
+help = say NoColor "(q)uit, (m/M)ake, make (b)ibtex, (t)erminal, (e)ditor, (p)df viewer"
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -177,7 +180,7 @@ main = do
 
   inotify <- initINotify
   say NoColor $ "watching " ++ mainFile opts
-  say NoColor "(q)uit, (m/M)ake, make (b)ibtex, (t)erminal, (e)ditor, (p)df viewer"
+  help
   doWatch opts inotify Ignored
 
   hSetBuffering stdin NoBuffering
