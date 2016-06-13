@@ -88,30 +88,59 @@ isUninteresting line =
 onlyInterestingLines :: [ByteString] -> [ByteString]
 onlyInterestingLines output = filter (not . isUninteresting) $ filter isInteresting output
 
--- some output of pdflatex contains non-utf8 characters, so we cannot use Strings
+copyFileIfExists :: FilePath -> FilePath -> IO ()
+copyFileIfExists src dst = do
+  itExists <- doesFileExist src
+  when itExists (copyFile src dst)
+
+buildDir :: String
+buildDir = "_build"
+
+{-
+ - Our make function builds the pdf file in a subdirectory. We do this because
+ - pdflatex deletes the old pdf file if compilation fails. This means when the
+ - tex file has an error, and the pdf viewer displays a black window.
+ -
+ - After a successful make the function copies the pdf file and the synctex
+ - file to the current directory, so that the pdf viewer and text editor can
+ - see them.
+ -}
+
 make :: Options -> String -> Bool -> Bool -> IO ()
 make opts file filterErrors isRerun = do
+  let pdfFile = replaceExtension file "pdf"
+  let synctexFile = replaceExtension file "synctex.gz"
   let errorFilter = if filterErrors then onlyInterestingLines else id
   makeGitRevision opts
   -- set line-length to really long so pdflatex doesn't insert hard linebreaks
   -- in its output
   setEnv "max_print_line" "1000"
+  -- we tell pdflatex to build in a subdirectory
+  createDirectoryIfMissing False buildDir
+  -- some output of pdflatex contains non-utf8 characters, so we cannot use
+  -- Strings, we have to use ByteStrings.
   output <- fmap errorFilter $ readProcessBS "pdflatex"
     [ "-interaction", "nonstopmode"
     , "-halt-on-error" -- otherwise pdflatex tight-loops on some errors. WTF?
     , "-synctex=1"
     , "-file-line-error"
+    , "-output-directory", buildDir
     , file]
+
+  -- print error messages if any
   mapM_ BS.putStrLn output
   writeErrorsFile output
   let color = if null output then Green else Red
   say color "latex run complete -------------------------"
-  when (not isRerun && labelsChangedWarning `elem` output) $
-   do
-    say NoColor "rerunning"
-    make opts file True True
-    -- pdflatex deletes the result on error which is annoying, but when we want
-    -- to use synctex there is nothing we can do.
+  let rerunRequired = (not isRerun && labelsChangedWarning `elem` output)
+  if rerunRequired
+    then do
+      say NoColor "rerunning"
+      make opts file True True
+    else do
+      -- copy output pdf to current directory so the pdf viewer can find it
+      copyFileIfExists (buildDir </> pdfFile) pdfFile
+      copyFileIfExists (buildDir </> synctexFile) synctexFile
 
 newline :: ByteString
 newline = BS.pack "\n"
