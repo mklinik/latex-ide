@@ -153,7 +153,7 @@ writeErrorsFile output = do
 
 makeBibtex :: Options -> IO ()
 makeBibtex opts = do
-  readProcessBS "bibtex" [dropExtension (mainFile opts)] >>= mapM_ BS.putStrLn
+  readProcessBS "bibtex" [buildDir </> dropExtension (mainFile opts)] >>= mapM_ BS.putStrLn
   make opts (mainFile opts) True False
   make opts (mainFile opts) True False
 
