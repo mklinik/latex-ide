@@ -191,13 +191,16 @@ spawnPdfViewer file = do
     { std_err = NoStream } -- suppress error messages of pdf viewer when file not found
   return ()
 
-spawnTexEditor :: String -> IO ProcessHandle
-spawnTexEditor file = spawnProcess "gvim" ["--servername", takeBaseName file, file]
+spawnTexEditor :: String -> IO ()
+spawnTexEditor file = do
+  _ <- spawnProcess "gvim" ["--servername", takeBaseName file, file]
+  return ()
 
-spawnTerminal :: String -> IO ProcessHandle
+spawnTerminal :: String -> IO ()
 spawnTerminal file = do
   dir <- takeDirectory `fmap` makeAbsolute file
-  spawnProcess "urxvt" ["-cd", dir]
+  _ <- spawnProcess "urxvt" ["-cd", dir]
+  return ()
 
 help :: IO ()
 help = say NoColor "(q)uit, (m/M)ake, make (b)ibtex, (t)erminal, (e)ditor, (p)df viewer"
