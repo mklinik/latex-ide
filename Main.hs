@@ -215,6 +215,9 @@ main = do
   help
   doWatch opts inotify Ignored
 
+  spawnPdfViewer (replaceExtension (mainFile opts) "pdf")
+  spawnTexEditor (mainFile opts)
+
   hSetBuffering stdin NoBuffering
   hSetEcho stdin False
   commandLoop opts
