@@ -66,9 +66,10 @@ readProcessBS prog args = do
   fmap (BS.split '\n') $ BS.hGetContents hout
 
 
-latexWarning, overfullHboxWarning, labelsChangedWarning, latexError :: ByteString
+latexWarning, overfullHboxWarning, labelsChangedWarning, latexError, latexErrorMessage :: ByteString
 latexWarning = BS.pack "LaTeX Warning:"
 latexError = BS.pack "./"
+latexErrorMessage = BS.pack "! LaTeX Error:"
 overfullHboxWarning = BS.pack "Overfull \\hbox"
 labelsChangedWarning = BS.pack "LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right."
 
@@ -77,6 +78,7 @@ isInteresting line =
      latexWarning `BS.isPrefixOf` line
   || overfullHboxWarning `BS.isPrefixOf` line
   || latexError `BS.isPrefixOf` line
+  || latexErrorMessage `BS.isPrefixOf` line
 
 noPdfFileProducedMessage :: ByteString
 noPdfFileProducedMessage = BS.pack "no output PDF file produced!"
