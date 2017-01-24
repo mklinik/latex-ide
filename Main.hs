@@ -21,11 +21,13 @@ data Options = Options
   { mainFile :: String
   , bibtexFile :: Maybe String
   , gitAware :: Bool
+  , once :: Bool
   }
 
 options :: [OptDescr (Options -> Options)]
 options =
   [ Option ['b'] ["bibtex"] (ReqArg (\b o -> o { bibtexFile = Just b }) "FILE") "the bibtex file your tex file uses"
+  , Option ['o'] ["once"]  (NoArg (\o -> o { once = True })) "run only once; don't go into loop mode"
   ]
 
 header :: String
@@ -36,7 +38,7 @@ parseOptions [] = ioError (userError (usageInfo header options))
 parseOptions (file:args) = case getOpt Permute options args of
   (o,_,[]) -> do
     gitAvailable <- determineGitAvailability
-    return $ foldl (flip id) (Options file Nothing gitAvailable) o
+    return $ foldl (flip id) (Options file Nothing gitAvailable False) o
   (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
 
 determineGitAvailability :: IO Bool
@@ -212,14 +214,21 @@ main = do
   args <- getArgs
   opts <- parseOptions args
 
-  inotify <- initINotify
-  say NoColor $ "watching " ++ mainFile opts
-  help
-  doWatch opts inotify Ignored
+  if (once opts)
+    then do
+      -- in once mode: make non-verbose
+      make opts (mainFile opts) True False
+      return ()
+    else do
+      -- loop mode
+      inotify <- initINotify
+      say NoColor $ "watching " ++ mainFile opts
+      help
+      doWatch opts inotify Ignored
 
-  spawnPdfViewer (replaceExtension (mainFile opts) "pdf")
-  spawnTexEditor (mainFile opts)
+      -- spawnPdfViewer (replaceExtension (mainFile opts) "pdf")
+      -- spawnTexEditor (mainFile opts)
 
-  hSetBuffering stdin NoBuffering
-  hSetEcho stdin False
-  commandLoop opts
+      hSetBuffering stdin NoBuffering
+      hSetEcho stdin False
+      commandLoop opts
