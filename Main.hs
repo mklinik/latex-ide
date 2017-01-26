@@ -62,9 +62,12 @@ say color thing = do
   escapeStop = "\x1b[0m"
 
 -- variant of Process.readProcess that returns the output of the process as [ByteString]
-readProcessBS :: FilePath -> [String] -> IO [ByteString]
-readProcessBS prog args = do
-  (_, Just hout, _, _) <- createProcess (proc prog args) { std_out = CreatePipe }
+readProcessBS :: FilePath -> [String] -> Maybe FilePath -> IO [ByteString]
+readProcessBS prog args mCwd = do
+  (_, Just hout, _, _) <- createProcess (proc prog args)
+    { std_out = CreatePipe
+    , cwd = mCwd
+    }
   fmap (BS.split '\n') $ BS.hGetContents hout
 
 
@@ -130,6 +133,7 @@ make opts file filterErrors isRerun = do
     , "-file-line-error"
     , "-output-directory", buildDir
     , file]
+    Nothing
 
   -- print error messages if any
   mapM_ BS.putStrLn output
@@ -139,7 +143,7 @@ make opts file filterErrors isRerun = do
   let rerunRequired = (not isRerun && labelsChangedWarning `elem` output)
   if rerunRequired
     then do
-      say NoColor "rerunning"
+      say NoColor "rerunning -----------------------"
       make opts file True True
     else do
       -- copy output pdf to current directory so the pdf viewer can find it
@@ -157,9 +161,14 @@ writeErrorsFile output = do
 
 makeBibtex :: Options -> IO ()
 makeBibtex opts = do
-  readProcessBS "bibtex" [buildDir </> dropExtension (mainFile opts)] >>= mapM_ BS.putStrLn
-  make opts (mainFile opts) True False
-  make opts (mainFile opts) True False
+  -- bibtex needs to be run in the build directory, but then we need to tell it
+  -- that the sources are in the current directory.
+  currentDirectory <- getCurrentDirectory
+  setEnv "BIBINPUTS" currentDirectory
+  readProcessBS "bibtex" [dropExtension (mainFile opts)]
+    (Just buildDir) -- bibtex needs to be run in the build directory...
+    >>= mapM_ BS.putStrLn
+  say NoColor "bibtex run complete -------------------------"
 
 makeGitRevision :: Options -> IO ()
 makeGitRevision opts = do
@@ -182,7 +191,14 @@ commandLoop opts = do
     'q' -> return ()
     'm' -> make opts (mainFile opts) True False >> commandLoop opts
     'M' -> make opts (mainFile opts) False False >> commandLoop opts
-    'b' -> makeBibtex opts >> commandLoop opts
+    'b' -> do
+      makeBibtex opts
+      make opts (mainFile opts) True False
+      make opts (mainFile opts) True False
+      commandLoop opts
+    'B' -> do
+      makeBibtex opts
+      commandLoop opts
     't' -> spawnTerminal (mainFile opts) >> commandLoop opts
     'e' -> spawnTexEditor (mainFile opts) >> commandLoop opts
     'p' -> spawnPdfViewer (replaceExtension (mainFile opts) "pdf") >> commandLoop opts
@@ -207,7 +223,7 @@ spawnTerminal file = do
   return ()
 
 help :: IO ()
-help = say NoColor "(q)uit, (m/M)ake, make (b)ibtex, (t)erminal, (e)ditor, (p)df viewer"
+help = say NoColor "(q)uit, (m/M)ake, make (b/B)ibtex, (t)erminal, (e)ditor, (p)df viewer"
 
 main :: IO ()
 main = do
@@ -226,8 +242,8 @@ main = do
       help
       doWatch opts inotify Ignored
 
-      -- spawnPdfViewer (replaceExtension (mainFile opts) "pdf")
-      -- spawnTexEditor (mainFile opts)
+      spawnPdfViewer (replaceExtension (mainFile opts) "pdf")
+      spawnTexEditor (mainFile opts)
 
       hSetBuffering stdin NoBuffering
       hSetEcho stdin False
