@@ -1,4 +1,5 @@
-import System.Environment (getArgs, setEnv)
+import System.Environment (getArgs)
+import System.Posix.Env (setEnv)
 import System.Process
 import System.INotify
 import qualified Data.ByteString.Char8 as BS
@@ -14,6 +15,8 @@ import Data.List (intersperse)
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Time.LocalTime
+import Data.Functor
+import System.Locale
 
 data TextColor = NoColor | Green | Red
 
@@ -121,7 +124,7 @@ make opts file filterErrors isRerun = do
   makeGitRevision opts
   -- set line-length to really long so pdflatex doesn't insert hard linebreaks
   -- in its output
-  setEnv "max_print_line" "1000"
+  setEnv "max_print_line" "1000" True
   -- we tell pdflatex to build in a subdirectory
   createDirectoryIfMissing False buildDir
   -- some output of pdflatex contains non-utf8 characters, so we cannot use
@@ -164,7 +167,7 @@ makeBibtex opts = do
   -- bibtex needs to be run in the build directory, but then we need to tell it
   -- that the sources are in the current directory.
   currentDirectory <- getCurrentDirectory
-  setEnv "BIBINPUTS" currentDirectory
+  setEnv "BIBINPUTS" currentDirectory True
   readProcessBS "bibtex" [dropExtension (mainFile opts)]
     (Just buildDir) -- bibtex needs to be run in the build directory...
     >>= mapM_ BS.putStrLn
