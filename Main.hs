@@ -38,8 +38,8 @@ header = "Usage: make-latex texFile [OPTION...] files..."
 
 parseOptions :: [String] -> IO Options
 parseOptions [] = ioError (userError (usageInfo header options))
-parseOptions (file:args) = case getOpt Permute options args of
-  (o,_,[]) -> do
+parseOptions args = case getOpt Permute options args of
+  (o,(file:_),[]) -> do
     gitAvailable <- determineGitAvailability
     return $ foldl (flip id) (Options file Nothing gitAvailable False) o
   (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
@@ -84,7 +84,7 @@ labelsChangedWarning = BS.pack "LaTeX Warning: Label(s) may have changed. Rerun 
 isInteresting :: ByteString -> Bool
 isInteresting line =
      latexWarning `BS.isPrefixOf` line
-  || overfullHboxWarning `BS.isPrefixOf` line
+  -- || overfullHboxWarning `BS.isPrefixOf` line
   || latexError `BS.isPrefixOf` line
   || latexErrorMessage `BS.isPrefixOf` line
 
