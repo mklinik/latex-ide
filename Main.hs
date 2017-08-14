@@ -17,6 +17,7 @@ import Data.Time.Format
 import Data.Time.LocalTime
 import Data.Functor
 import System.Locale
+import Control.Concurrent (threadDelay)
 
 data TextColor = NoColor | Green | Red
 
@@ -245,8 +246,9 @@ main = do
       help
       doWatch opts inotify Ignored
 
-      spawnPdfViewer (replaceExtension (mainFile opts) "pdf")
       spawnTexEditor (mainFile opts)
+      threadDelay 400000
+      spawnPdfViewer (replaceExtension (mainFile opts) "pdf")
 
       hSetBuffering stdin NoBuffering
       hSetEcho stdin False
