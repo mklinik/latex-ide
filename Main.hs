@@ -169,6 +169,7 @@ makeBibtex opts = do
   -- that the sources are in the current directory.
   currentDirectory <- getCurrentDirectory
   setEnv "BIBINPUTS" currentDirectory True
+  setEnv "BSTINPUTS" currentDirectory True
   readProcessBS "bibtex" [dropExtension (mainFile opts)]
     (Just buildDir) -- bibtex needs to be run in the build directory...
     >>= mapM_ BS.putStrLn
