@@ -126,6 +126,8 @@ make opts file filterErrors isRerun = do
   -- set line-length to really long so pdflatex doesn't insert hard linebreaks
   -- in its output
   setEnv "max_print_line" "1000" True
+  -- support for local TEXMF
+  setEnv "TEXMFHOME" "./texmf/" True
   -- we tell pdflatex to build in a subdirectory
   createDirectoryIfMissing False buildDir
   -- some output of pdflatex contains non-utf8 characters, so we cannot use
