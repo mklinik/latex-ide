@@ -147,7 +147,7 @@ newline = BS.pack "\n"
 
 writeErrorsFile :: [ByteString] -> IO ()
 writeErrorsFile output = do
-  let errorsFile = "errors.err"
+  let errorsFile = buildDir </> "errors.err"
   BS.writeFile errorsFile (foldr BS.append newline $ intersperse newline output)
   return ()
 
