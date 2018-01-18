@@ -73,11 +73,10 @@ readProcessBS prog args mCwd = do
   fmap (BS.split '\n') $ BS.hGetContents hout
 
 
-latexWarning, overfullHboxWarning, labelsChangedWarning, latexError, latexErrorMessage :: ByteString
+latexWarning, labelsChangedWarning, latexError, latexErrorMessage :: ByteString
 latexWarning = BS.pack "LaTeX Warning:"
 latexError = BS.pack "./"
 latexErrorMessage = BS.pack "! LaTeX Error:"
-overfullHboxWarning = BS.pack "Overfull \\hbox"
 labelsChangedWarning = BS.pack "LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right."
 
 isInteresting :: ByteString -> Bool
