@@ -120,14 +120,14 @@ make opts file filterErrors isRerun = do
   let pdfFile = replaceExtension file "pdf"
   let synctexFile = replaceExtension file "synctex.gz"
   let errorFilter = if filterErrors then onlyInterestingLines else id
+  -- we tell pdflatex to build in a subdirectory
+  createDirectoryIfMissing False buildDir
   makeGitRevision opts
   -- set line-length to really long so pdflatex doesn't insert hard linebreaks
   -- in its output
   setEnv "max_print_line" "1000" True
   -- support for local TEXMF
   setEnv "TEXMFHOME" "./texmf/" True
-  -- we tell pdflatex to build in a subdirectory
-  createDirectoryIfMissing False buildDir
   -- some output of pdflatex contains non-utf8 characters, so we cannot use
   -- Strings, we have to use ByteStrings.
   output <- fmap errorFilter $ readProcessBS "pdflatex"
@@ -180,7 +180,7 @@ makeGitRevision opts = do
  gitVersion <- if (gitAware opts)
    then filter (not . isSpace) <$> readProcess "git" ["describe", "--always", "--long", "--dirty"] ""
    else return "unknown"
- writeFile "version.tex" $ "\\newcommand{\\version}{" ++ gitVersion ++ "}"
+ writeFile (buildDir </> "version.tex") $ "\\newcommand{\\version}{" ++ gitVersion ++ "}"
 
 doWatch :: Options -> INotify -> Event -> IO ()
 doWatch opts inotify _ = do
