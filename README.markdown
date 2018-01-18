@@ -1,13 +1,13 @@
 make-latex
 ----------
 
+* Starts pdf viewer and editor connected by synctex
+* pdf viewer is zathura, editor is gvim
 * Automatically runs latex when the source file changes.
 * Re-runs once if necessary.
-* Uses inotify.
-* Minimal error handling.
 
 Usage
------
+=====
 
 ```
 $ make-latex test.tex
@@ -25,4 +25,16 @@ make-latex: latex run complete
 make-latex: bye
 ```
 
-Written in Haskell because Haskell is the better scripting language.
+Installation
+============
+
+Building from source requires haskell stack to be installed.
+https://docs.haskellstack.org/en/stable/README/
+
+```
+$ git clone https://github.com/mklinik/latex-ide.git
+$ cd latex-ide
+$ stack install
+```
+
+The executable `latex-ide` is installed in $HOME/.local/bin
