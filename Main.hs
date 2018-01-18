@@ -97,11 +97,6 @@ isUninteresting line =
 onlyInterestingLines :: [ByteString] -> [ByteString]
 onlyInterestingLines output = filter (not . isUninteresting) $ filter isInteresting output
 
-copyFileIfExists :: FilePath -> FilePath -> IO ()
-copyFileIfExists src dst = do
-  itExists <- doesFileExist src
-  when itExists (copyFile src dst)
-
 buildDir :: String
 buildDir = "_build"
 
@@ -117,8 +112,6 @@ buildDir = "_build"
 
 make :: Options -> String -> Bool -> Bool -> IO ()
 make opts file filterErrors isRerun = do
-  let pdfFile = replaceExtension file "pdf"
-  let synctexFile = replaceExtension file "synctex.gz"
   let errorFilter = if filterErrors then onlyInterestingLines else id
   -- we tell pdflatex to build in a subdirectory
   createDirectoryIfMissing False buildDir
@@ -145,14 +138,9 @@ make opts file filterErrors isRerun = do
   let color = if null output then Green else Red
   say color "latex run complete -------------------------"
   let rerunRequired = (not isRerun && labelsChangedWarning `elem` output)
-  if rerunRequired
-    then do
-      say NoColor "rerunning -----------------------"
-      make opts file True True
-    else do
-      -- copy output pdf to current directory so the pdf viewer can find it
-      copyFileIfExists (buildDir </> pdfFile) pdfFile
-      copyFileIfExists (buildDir </> synctexFile) synctexFile
+  when rerunRequired $ do
+    say NoColor "rerunning -----------------------"
+    make opts file True True
 
 newline :: ByteString
 newline = BS.pack "\n"
@@ -249,7 +237,7 @@ main = do
 
       spawnTexEditor (mainFile opts)
       threadDelay 400000
-      spawnPdfViewer (replaceExtension (mainFile opts) "pdf")
+      spawnPdfViewer $ buildDir </> replaceExtension (mainFile opts) "pdf"
 
       hSetBuffering stdin NoBuffering
       hSetEcho stdin False
