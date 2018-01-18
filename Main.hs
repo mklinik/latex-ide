@@ -15,8 +15,6 @@ import Data.List (intersperse)
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Time.LocalTime
-import Data.Functor
-import System.Locale
 import Control.Concurrent (threadDelay)
 
 data TextColor = NoColor | Green | Red
