@@ -85,7 +85,6 @@ labelsChangedWarning = BS.pack "LaTeX Warning: Label(s) may have changed. Rerun 
 isInteresting :: ByteString -> Bool
 isInteresting line =
      latexWarning `BS.isPrefixOf` line
-  -- || overfullHboxWarning `BS.isPrefixOf` line
   || latexError `BS.isPrefixOf` line
   || latexErrorMessage `BS.isPrefixOf` line
 
