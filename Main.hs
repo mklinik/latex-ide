@@ -101,16 +101,6 @@ onlyInterestingLines output = filter (not . isUninteresting) $ filter isInterest
 buildDir :: String
 buildDir = "_build"
 
-{-
- - Our make function builds the pdf file in a subdirectory. We do this because
- - pdflatex deletes the old pdf file if compilation fails. This means when the
- - tex file has an error, and the pdf viewer displays a black window.
- -
- - After a successful make the function copies the pdf file and the synctex
- - file to the current directory, so that the pdf viewer and text editor can
- - see them.
- -}
-
 make :: Options -> String -> Bool -> Bool -> IO ()
 make opts file filterErrors isRerun = do
   let errorFilter = if filterErrors then onlyInterestingLines else id
