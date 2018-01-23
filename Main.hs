@@ -190,21 +190,18 @@ commandLoop opts = do
 
 spawnPdfViewer :: String -> IO ()
 spawnPdfViewer file = do
-  _ <- createProcess $
+  void $ createProcess $
     (proc "zathura" ["-x", "vim --servername " ++ takeBaseName file ++ " --remote-send %{line}gg", file])
     { std_err = NoStream } -- suppress error messages of pdf viewer when file not found
-  return ()
 
 spawnTexEditor :: String -> IO ()
 spawnTexEditor file = do
-  _ <- spawnProcess "gvim" ["--servername", takeBaseName file, file]
-  return ()
+  void $ spawnProcess "gvim" ["--servername", takeBaseName file, file]
 
 spawnTerminal :: String -> IO ()
 spawnTerminal file = do
   dir <- takeDirectory `fmap` makeAbsolute file
-  _ <- spawnProcess "urxvt" ["-cd", dir]
-  return ()
+  void $ spawnProcess "urxvt" ["-cd", dir]
 
 help :: IO ()
 help = say NoColor "(q)uit, (m/M)ake, make (b/B)ibtex, (t)erminal, (e)ditor, (p)df viewer"
