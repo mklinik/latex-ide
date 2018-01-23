@@ -120,7 +120,8 @@ make opts file filterErrors isRerun = do
     , "-synctex=1"
     , "-file-line-error"
     , "-output-directory", buildDir
-    , file]
+    , file
+    ]
     Nothing
 
   -- print error messages if any
