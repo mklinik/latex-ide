@@ -187,7 +187,7 @@ commandLoop opts = do
       commandLoop opts
     't' -> spawnTerminal (mainFile opts) >> commandLoop opts
     'e' -> spawnTexEditor (mainFile opts) >> commandLoop opts
-    'p' -> spawnPdfViewer (replaceExtension (mainFile opts) "pdf") >> commandLoop opts
+    'p' -> spawnPdfViewer (buildDir </> replaceExtension (mainFile opts) "pdf") >> commandLoop opts
     _   -> putStr "unknown command '" >> putChar c >> putStrLn "'" >> help >> commandLoop opts
 
 spawnPdfViewer :: String -> IO ()
