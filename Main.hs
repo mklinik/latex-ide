@@ -26,6 +26,7 @@ data Options = Options
   , gitAware :: Bool
   , once :: Bool
   , headless :: Bool
+  , texmfHome :: String
   }
 
 options :: [OptDescr (Options -> Options)]
@@ -33,7 +34,19 @@ options =
   [ Option ['b'] ["bibtex"] (ReqArg (\b o -> o { bibtexFile = Just b }) "FILE") "the bibtex file your tex file uses"
   , Option ['o'] ["once"]  (NoArg (\o -> o { once = True })) "run only once; don't go into loop mode"
   , Option []    ["headless"] (NoArg (\o -> o { headless = True })) "Don't spawn pdf viewer and text editor"
+  , Option [] ["texmf"] (ReqArg (\dir o -> o { texmfHome = dir }) "DIRECTORY") "sets custom TEXMFHOME when calling pdflatex. Default ./texmf/"
   ]
+
+mkOptions :: String -> Bool -> Options
+mkOptions mainFile_ gitAware_ =
+  Options
+    { mainFile = mainFile_
+    , bibtexFile = Nothing
+    , gitAware = gitAware_
+    , once = False
+    , headless = False
+    , texmfHome = "./texmf/"
+    }
 
 header :: String
 header = "Usage: make-latex texFile [OPTION...] files..."
@@ -43,7 +56,7 @@ parseOptions [] = ioError (userError (usageInfo header options))
 parseOptions args = case getOpt Permute options args of
   (o,(file:_),[]) -> do
     gitAvailable <- determineGitAvailability
-    return $ foldl (flip id) (Options file Nothing gitAvailable False False) o
+    return $ foldl (flip id) (mkOptions file gitAvailable) o
   (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
 
 determineGitAvailability :: IO Bool
@@ -111,7 +124,7 @@ make opts file filterErrors isRerun = do
   -- in its output
   setEnv "max_print_line" "1000" True
   -- support for local TEXMF
-  setEnv "TEXMFHOME" "./texmf/" True
+  setEnv "TEXMFHOME" (texmfHome opts) True
   -- some output of pdflatex contains non-utf8 characters, so we cannot use
   -- Strings, we have to use ByteStrings.
   output <- fmap errorFilter $ readProcessBS "pdflatex"
