@@ -22,7 +22,6 @@ data TextColor = NoColor | Green | Red
 
 data Options = Options
   { mainFile :: String
-  , bibtexFile :: Maybe String
   , gitAware :: Bool
   , once :: Bool
   , headless :: Bool
@@ -31,8 +30,7 @@ data Options = Options
 
 options :: [OptDescr (Options -> Options)]
 options =
-  [ Option ['b'] ["bibtex"] (ReqArg (\b o -> o { bibtexFile = Just b }) "FILE") "the bibtex file your tex file uses"
-  , Option ['o'] ["once"]  (NoArg (\o -> o { once = True })) "run only once; don't go into loop mode"
+  [ Option ['o'] ["once"]  (NoArg (\o -> o { once = True })) "run only once; don't go into loop mode"
   , Option []    ["headless"] (NoArg (\o -> o { headless = True })) "Don't spawn pdf viewer and text editor"
   , Option [] ["texmf"] (ReqArg (\dir o -> o { texmfHome = dir }) "DIRECTORY") "sets custom TEXMFHOME when calling pdflatex. Default ./texmf/"
   ]
@@ -41,7 +39,6 @@ mkOptions :: String -> Bool -> Options
 mkOptions mainFile_ gitAware_ =
   Options
     { mainFile = mainFile_
-    , bibtexFile = Nothing
     , gitAware = gitAware_
     , once = False
     , headless = False
