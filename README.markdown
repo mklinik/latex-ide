@@ -46,10 +46,10 @@ nmap <Leader>f :call SyncTexForward()<CR><C-l>
 ```
 
 
-## TODO
+## Version Numbers
 
-- implement the git version feature: When the tex file is in a git repository,
-  generate a version.tex file before running pdflatex
+The pdflatex command generates a file `version.tex` in the `_build` directory
+that contains the current git hash. See test.tex for how to use it.
 
 
 ## Deprecated

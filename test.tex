@@ -2,6 +2,20 @@
 
 \usepackage{natbib}
 
+% version.tex needs to define the command \version
+\IfFileExists{version.tex}
+  {\input{version.tex}}
+  {\newcommand{\version}{unknown}}
+
+\usepackage[yyyymmdd,24hr]{datetime}
+\renewcommand{\dateseparator}{-}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead{}
+\fancyfoot[L]{v.\version\ \today\ \currenttime}
+
 \title{My super fancy paper}
 \author{
        Markus Klinik
@@ -12,15 +26,18 @@
 \begin{document}
 
 \maketitle
+\thispagestyle{fancy}
 
 \begin{abstract}
-An example article with custom bibliographystyle.
+An example article with custom bibliographystyle and git version number.
 \end{abstract}
 
 \section{Introduction}
 
 In this paper we cite \citet{Nielson1999}, which is a pretty good book.
 Thanks. Bye!
+
+Use {\version} in any way you want, in headers, footers, pdf metadata.
 
 \bibliographystyle{bibliography/myplainnat}
 \bibliography{bibliography/computer_science}
