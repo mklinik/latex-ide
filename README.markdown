@@ -25,6 +25,7 @@ looked into that now. latex-ide's error filtering was not very precise anyway.
   installs latexmk by default.
 - Have zathura and gvim installed
 - Copy the file `latexmkrc` to your home directory or to where your .tex file sits.
+- Try it with the tex file in this repository:
 
 ```
 $ latexmk -pvc test.tex
