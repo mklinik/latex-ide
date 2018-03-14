@@ -26,7 +26,9 @@ looked into that now. latex-ide's error filtering was not very precise anyway.
 - Have zathura and gvim installed
 - Copy the file `latexmkrc` to your home directory or to where your .tex file sits.
 
-    $ latexmk -pvc test.tex
+```
+$ latexmk -pvc test.tex
+```
 
 
 ## Synctex
@@ -34,11 +36,13 @@ looked into that now. latex-ide's error filtering was not very precise anyway.
 - Ctrl-click on the pdf to jump to the source location in vim.
 - For jumping to the pdf location from the source code, have the following in your vimrc:
 
-    function! SyncTexForward()
-      let execstr = "silent !zathura --synctex-forward " . line(".") . ":0:% _build/%:r.pdf"
-      exec execstr
-    endfunction
-    nmap <Leader>f :call SyncTexForward()<CR><C-l>
+```
+function! SyncTexForward()
+  let execstr = "silent !zathura --synctex-forward " . line(".") . ":0:% _build/%:r.pdf"
+  exec execstr
+endfunction
+nmap <Leader>f :call SyncTexForward()<CR><C-l>
+```
 
 
 ## TODO
