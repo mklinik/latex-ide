@@ -3,8 +3,7 @@
 Have one command that spawns a pdf viewer and an editor and automatically
 compiles the tex file when it changes.
 
-latex-ide is deprecated. I found out that latexmk can do everything I want.
-Just use the latexmkrc in this repository.
+latexmk can do everything I want. Just use the latexmkrc in this repository.
 
 - latexmk supports out-of-source builds
 - latexmk -pvc supports watching for file changes and automatically runs pdflatex
