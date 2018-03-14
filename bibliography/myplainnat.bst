@@ -728,6 +728,7 @@ FUNCTION {article}
 
 FUNCTION {book}
 { output.bibitem
+  "This is a book, you know?" output
   author empty$
     { format.editors "author and editor" output.check
       editor format.key output
