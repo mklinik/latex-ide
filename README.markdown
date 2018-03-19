@@ -13,10 +13,8 @@ latexmk can do everything I want. Just use the latexmkrc in this repository.
   --servername feature.
 - mklatex knows how to find .bst and .bib files in subdirectories
 - mklatex -pvc monitors the .bib file, something latex-ide couldn't do
+- use texfot for filtering the output of pdflatex
 
-The only thing latexmk doesn't do is error filtering. You always get the whole
-barrage of pdflatex output. There seem to be tools for that, but I haven't
-looked into that now. latex-ide's error filtering was not very precise anyway.
 
 
 ## Usage
