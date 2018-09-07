@@ -36,8 +36,21 @@ $ latexmk -pvc test.tex
 - For jumping to the pdf location from the source code, have the following in your vimrc:
 
 ```
+" For multi-file projects, it is common to give the root tex file as metadata
+" in a comment in the first line, like so:
+" % TEX root=../foobar.tex
+"
+" We can use this meta information for forward synctex.
+"
+" First step: try to find the TEX root line. If there is none, use the name of
+" the current buffer
+let b:texroot=get(matchlist(getline(1), "TEX root=\\(.*\\)"), 1, bufname('%'))
+" Set the name of the output pdf. This assumes my personal setup, where I let
+" latexmk put all files into _build
+let b:outputpdf="_build/" . fnamemodify(b:texroot, ":t:r") . ".pdf"
+
 function! SyncTexForward()
-  let execstr = "silent !zathura --synctex-forward " . line(".") . ":0:% _build/%:r.pdf"
+  let execstr = "silent !zathura --synctex-forward " . line('.') . ":" . col('.') . ":" . bufname('%') . " " . b:outputpdf
   exec execstr
 endfunction
 nmap <Leader>f :call SyncTexForward()<CR><C-l>
