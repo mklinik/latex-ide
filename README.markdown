@@ -12,7 +12,7 @@ latexmk can do everything I want. Just use the latexmkrc in this repository.
 - multiple instances for different tex files are supported by using vim's
   --servername feature.
 - mklatex knows how to find .bst and .bib files in subdirectories
-- mklatex -pvc monitors the .bib file, something latex-ide couldn't do
+- mklatex -pvc monitors all dependencies, including .bib files and includes, and initiates a build if any of them change
 - use texfot for filtering the output of pdflatex
 
 
